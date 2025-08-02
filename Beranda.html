@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Noisic - Pemutar Musik</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1DB954;
+            --primary-dark: #1aa34a;
+            --dark: #191414;
+            --darker: #121212;
+            --light: #FFFFFF;
+            --gray: #535353;
+            --light-gray: #B3B3B3;
+            --sidebar-width: 240px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--darker);
+            color: var(--light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        /* Layout */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            flex-direction: column;
+        }
+        
+        /* Sidebar - Hidden on mobile */
+        .sidebar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 80px;
+            width: 280px;
+            background-color: var(--dark);
+            padding: 20px;
+            flex-direction: column;
+            z-index: 100;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.show {
+            transform: translateX(0);
+        }
+        
+        /* Overlay for sidebar */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+        
+        .overlay.show {
+            display: block;
+        }
+        
+        /* Mobile Bottom Navigation */
+        .mobile-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: var(--dark);
+            padding: 12px 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            border-top: 1px solid #282828;
+        }
+        
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--light-gray);
+            text-decoration: none;
+            font-size: 10px;
+        }
+        
+        .mobile-nav-item i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .mobile-nav-item.active {
+            color: var(--primary);
+        }
+        
+        /* Main Content */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 80px;
+        }
+        
+        /* Navigation */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--dark);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .search-bar {
+            display: none; /* Hidden on mobile by default */
+        }
+        
+        .menu-toggle {
+            font-size: 20px;
+            color: var(--light);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--light);
+            color: var(--light);
+            display: none; /* Hidden on mobile */
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            border: none;
+            color: var(--dark);
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding: 60px 20px;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                        url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            line-height: 1.2;
+        }
+        
+        .hero p {
+            font-size: 16px;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            line-height: 1.5;
+        }
+        
+        /* Content Sections */
+        .container {
+            padding: 20px 15px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title a {
+            color: var(--light-gray);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: normal;
+        }
+        
+        .section-title a:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+        
+        /* Music Grid */
+        .music-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .music-card {
+            background-color: #181818;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .music-card:hover {
+            background-color: #282828;
+        }
+        
+        .music-cover {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            object-fit: cover;
+        }
+        
+        .music-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 14px;
+        }
+        
+        .music-artist {
+            color: var(--light-gray);
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .play-button {
+            position: absolute;
+            right: 15px;
+            bottom: 70px;
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: none;
+            color: var(--dark);
+        }
+        
+        .music-card:hover .play-button {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .play-button:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.05) translateY(0);
+        }
+        
+        /* Featured Playlist */
+        .featured-playlist {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .featured-card {
+            background: linear-gradient(135deg, #450af5, #8e8ee5);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 150px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .featured-card:nth-child(2) {
+            background: linear-gradient(135deg, #006450, #27856a);
+        }
+        
+        .featured-card:nth-child(3) {
+            background: linear-gradient(135deg, #8400e7, #ba5d07);
+        }
+        
+        .featured-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .featured-description {
+            font-size: 12px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .featured-image {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            height: 80px;
+            transform: rotate(25deg) translate(18%, -2%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Recently Played */
+        .recently-played {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .recent-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        
+        .recent-card:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .recent-cover {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+        }
+        
+        .recent-info {
+            flex: 1;
+        }
+        
+        .recent-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .recent-artist {
+            color: var(--light-gray);
+            font-size: 12px;
+        }
+        
+        .recent-time {
+            color: var(--light-gray);
+            font-size: 10px;
+        }
+        
+        /* Player Bar */
+        .player-bar {
+            background-color: #181818;
+            border-top: 1px solid #282828;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            bottom: 60px; /* Above mobile nav */
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
+        .song-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 60%;
+        }
+        
+        .song-cover {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+        }
+        
+        .song-details {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .song-name {
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .song-artist {
+            color: var(--light-gray);
+            font-size: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 40%;
+            justify-content: flex-end;
+        }
+        
+        .control-buttons button {
+            background: none;
+            border: none;
+            color: var(--light);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-buttons button:hover {
+            color: var(--primary);
+        }
+        
+        .control-buttons .play-btn {
+            font-size: 24px;
+            color: var(--primary);
+            background-color: var(--light);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .progress-container {
+            display: none;
+        }
+        
+        .additional-controls {
+            display: none;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 300;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background-color: var(--dark);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 20px;
+            color: var(--light-gray);
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: var(--light);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--light-gray);
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid var(--gray);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 14px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        /* Audio Upload Section */
+        .upload-section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .upload-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--primary);
+            color: var(--dark);
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .upload-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .upload-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .uploaded-songs {
+            margin-top: 20px;
+        }
+        
+        .uploaded-song {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.03);
+            margin-bottom: 10px;
+        }
+        
+        .uploaded-song:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Responsive Adjustments */
+        @media (min-width: 576px) {
+            .hero h1 {
+                font-size: 48px;
+            }
+            
+            .hero p {
+                font-size: 18px;
+            }
+            
+            .music-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .player-bar {
+                bottom: 0;
+            }
+            
+            .mobile-nav {
+                display: none;
+            }
+            
+            .top-nav {
+                background-color: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(10px);
+            }
+            
+            .menu-toggle {
+                display: none;
+            }
+            
+            .search-bar {
+                display: flex;
+                align-items: center;
+                background-color: rgba(255, 255, 255, 0.1);
+                border-radius: 20px;
+                padding: 8px 15px;
+                width: 200px;
+                transition: all 0.3s;
+            }
+            
+            .search-bar i {
+                font-size: 14px;
+            }
+            
+            .search-bar input {
+                background: transparent;
+                border: none;
+                color: var(--light);
+                font-size: 14px;
+                width: 100%;
+                outline: none;
+                margin-left: 8px;
+            }
+            
+            .btn-outline {
+                display: block;
+            }
+            
+            .main-container {
+                flex-direction: row;
+            }
+            
+            .sidebar {
+                display: flex;
+                position: static;
+                width: var(--sidebar-width);
+                transform: none;
+                padding: 24px;
+            }
+            
+            .content {
+                padding-bottom: 100px;
+            }
+            
+            .progress-container {
+                display: flex;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .hero {
+                padding: 80px 40px;
+            }
+            
+            .hero h1 {
+                font-size: 60px;
+            }
+            
+            .container {
+                padding: 30px 40px;
+            }
+            
+            .music-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+            }
+            
+            .featured-playlist {
+                flex-direction: row;
+            }
+            
+            .recently-played {
+                flex-direction: row;
+            }
+            
+            .player-bar {
+                padding: 16px 20px;
+            }
+            
+            .song-info {
+                width: 30%;
+            }
+            
+            .player-controls {
+                width: 40%;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .control-buttons {
+                margin-bottom: 8px;
+            }
+            
+            .progress-container {
+                display: flex;
+                width: 100%;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .progress-time {
+                font-size: 12px;
+                color: var(--light-gray);
+                min-width: 40px;
+            }
+            
+            .progress-bar {
+                height: 4px;
+                background-color: #535353;
+                border-radius: 2px;
+                flex-grow: 1;
+                cursor: pointer;
+                position: relative;
+            }
+            
+            .progress-fill {
+                height: 100%;
+                background-color: var(--light);
+                border-radius: 2px;
+                width: 30%;
+                position: relative;
+            }
+        }
+        
+        @media (min-width: 992px) {
+            .music-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            
+            .search-bar {
+                width: 300px;
+            }
+            
+            .player-controls {
+                width: 50%;
+            }
+            
+            .additional-controls {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                width: 20%;
+                justify-content: flex-end;
+            }
+            
+            .volume-control {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .upload-container {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Sidebar - Hidden on mobile -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fas fa-music"></i>
+                <span>Noisic</span>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Beranda</span>
+                </div>
+                <div class="sidebar-link">
+                    <i class="fas fa-search"></i>
+                    <span>Jelajahi</span>
+                </div>
+                <div class="sidebar-link">
+                    <i class="fas fa-book"></i>
+                    <span>Koleksi</span>
+                </div>
+                <div class="sidebar-link">
+                    <i class="fas fa-upload"></i>
+                    <span>Unggah Musik</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-title">Playlist Anda</div>
+                <div class="playlist-list">
+                    <a href="#" class="playlist-item">Favorit Saya</a>
+                    <a href="#" class="playlist-item">Lagu Santai</a>
+                    <a href="#" class="playlist-item">Workout Mix</a>
+                    <a href="#" class="playlist-item">Road Trip</a>
+                    <a href="#" class="playlist-item">Chill Vibes</a>
+                </div>
+            </div>
+            
+            <a href="#" class="install-app">
+                <i class="fas fa-download"></i>
+                <span>Install App</span>
+            </a>
+        </aside>
+        
+        <!-- Overlay for sidebar on mobile -->
+        <div class="overlay"></div>
+        
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Navigation -->
+            <nav class="top-nav">
+                <button class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Cari lagu, artis, atau album">
+                </div>
+                
+                <div class="user-profile">
+                    <button class="btn btn-outline">Upgrade</button>
+                    <div class="user-avatar">U</div>
+                </div>
+            </nav>
+            
+            <!-- Hero Section -->
+            <section class="hero">
+                <h1>Musik Tanpa Batas</h1>
+                <p>Temukan jutaan lagu dari berbagai genre dan artis favorit Anda. Dengarkan kapan saja, di mana saja.</p>
+                <button class="btn btn-primary">Mulai Dengarkan</button>
+            </section>
+            
+            <!-- Audio Upload Section -->
+            <div class="container">
+                <div class="section-title">
+                    <h2>Unggah Musik Anda</h2>
+                </div>
+                
+                <div class="upload-section">
+                    <div class="upload-container">
+                        <label for="fileInput" class="upload-btn">
+                            <i class="fas fa-upload"></i> Pilih File Musik
+                        </label>
+                        <input type="file" id="fileInput" accept="audio/*">
+                        <div class="upload-info">
+                            <p>Format yang didukung: MP3, WAV, OGG</p>
+                            <p>Maksimal ukuran file: 10MB</p>
+                        </div>
+                    </div>
+                    
+                    <div class="uploaded-songs">
+                        <h3>Musik Anda</h3>
+                        <div id="uploadedSongsList"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Featured Playlists -->
+            <div class="container">
+                <div class="section-title">
+                    <h2>Dengarkan Kembali</h2>
+                    <a href="#">Lihat Semua</a>
+                </div>
+                
+                <div class="featured-playlist">
+                    <div class="featured-card">
+                        <h3 class="featured-title">Daily Mix 1</h3>
+                        <p class="featured-description">Lagu favoritmu dari berbagai genre</p>
+                        <img src="https://i.scdn.co/image/ab67706f00000002ca5a7517156021292e5663a6" alt="Daily Mix" class="featured-image">
+                    </div>
+                    <div class="featured-card">
+                        <h3 class="featured-title">Discover Weekly</h3>
+                        <p class="featured-description">Rekomendasi baru setiap Senin</p>
+                        <img src="https://i.scdn.co/image/ab67706f00000002a980b152e708b33c6516d848" alt="Discover Weekly" class="featured-image">
+                    </div>
+                    <div class="featured-card">
+                        <h3 class="featured-title">Release Radar</h3>
+                        <p class="featured-description">Rilis baru dari artis favoritmu</p>
+                        <img src="https://i.scdn.co/image/ab67706f00000002e4eadd7227733ef712a6a690" alt="Release Radar" class="featured-image">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recently Played -->
+            <div class="container">
+                <div class="section-title">
+                    <h2>Baru Saja Diputar</h2>
+                    <a href="#">Lihat Riwayat</a>
+                </div>
+                
+                <div class="recently-played">
+                    <div class="recent-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228" alt="Album Cover" class="recent-cover">
+                        <div class="recent-info">
+                            <div class="recent-title">Bohemian Rhapsody</div>
+                            <div class="recent-artist">Queen</div>
+                        </div>
+                        <div class="recent-time">1 jam lalu</div>
+                    </div>
+                    <div class="recent-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02d5f9985d59d3a5e0c8b28510" alt="Album Cover" class="recent-cover">
+                        <div class="recent-info">
+                            <div class="recent-title">Shape of You</div>
+                            <div class="recent-artist">Ed Sheeran</div>
+                        </div>
+                        <div class="recent-time">2 jam lalu</div>
+                    </div>
+                    <div class="recent-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02a4f4b0a221f64b5c153f5e03" alt="Album Cover" class="recent-cover">
+                        <div class="recent-info">
+                            <div class="recent-title">Die For You</div>
+                            <div class="recent-artist">The Weeknd</div>
+                        </div>
+                        <div class="recent-time">3 jam lalu</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content Sections -->
+            <div class="container">
+                <div class="section-title">
+                    <h2>Rilis Baru</h2>
+                    <a href="#">Lihat Semua</a>
+                </div>
+                <div class="music-grid">
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02b1c4b76e23414c9f20242268" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Flowers</h3>
+                        <p class="music-artist">Miley Cyrus</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02a991995542d50a691b9ae5be" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Kill Bill</h3>
+                        <p class="music-artist">SZA</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02bb54dde68cd23e2a268ae0f5" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Anti-Hero</h3>
+                        <p class="music-artist">Taylor Swift</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02da5d5aeeabacacc1263c0f4b" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Creepin'</h3>
+                        <p class="music-artist">Metro Boomin, The Weeknd, 21 Savage</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02b6d4566dfd19c7a8f681c6c5" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Unholy</h3>
+                        <p class="music-artist">Sam Smith, Kim Petras</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="container">
+                <div class="section-title">
+                    <h2>Rekomendasi Untukmu</h2>
+                    <a href="#">Lihat Semua</a>
+                </div>
+                <div class="music-grid">
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02668e3aca3167e6e569a9aa20" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">As It Was</h3>
+                        <p class="music-artist">Harry Styles</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02b1c4b76e23414c9f20242268" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Flowers</h3>
+                        <p class="music-artist">Miley Cyrus</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02a4f4b0a221f64b5c153f5e03" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Die For You</h3>
+                        <p class="music-artist">The Weeknd</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02fc7c0c21c1a9141e0c1d41a1" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Yellow</h3>
+                        <p class="music-artist">Coldplay</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="music-card">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02a04c78c9f617e4e5e800a9d6" alt="Album Cover" class="music-cover">
+                        <h3 class="music-title">Starboy</h3>
+                        <p class="music-artist">The Weeknd, Daft Punk</p>
+                        <button class="play-button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Player Bar -->
+    <div class="player-bar">
+        <div class="song-info">
+            <img src="https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228" alt="Song Cover" class="song-cover">
+            <div class="song-details">
+                <span class="song-name">Bohemian Rhapsody</span>
+                <span class="song-artist">Queen</span>
+            </div>
+        </div>
+        
+        <div class="player-controls">
+            <button class="play-btn"><i class="fas fa-pause"></i></button>
+            <button><i class="fas fa-step-forward"></i></button>
+        </div>
+    </div>
+    
+    <!-- Audio Element (Hidden) -->
+    <audio id="audioPlayer"></audio>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav">
+        <a href="#" class="mobile-nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Beranda</span>
+        </a>
+        <a href="#" class="mobile-nav-item">
+            <i class="fas fa-search"></i>
+            <span>Cari</span>
+        </a>
+        <a href="#" class="mobile-nav-item">
+            <i class="fas fa-book"></i>
+            <span>Koleksi</span>
+        </a>
+        <a href="#" class="mobile-nav-item">
+            <i class="fas fa-upload"></i>
+            <span>Unggah</span>
+        </a>
+    </nav>
+    
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <h2 class="modal-title">Masuk ke Noisi</h2>
+            
+            <div class="form-group">
+                <label for="email">Alamat Email</label>
+                <input type="email" id="email" placeholder="email@contoh.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Kata Sandi</label>
+                <input type="password" id="password" placeholder="Kata sandi Anda">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-outline">Daftar</button>
+                <button class="btn btn-primary">Masuk</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Audio Player Functionality
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playBtn = document.querySelector('.play-btn');
+        const playIcon = playBtn.querySelector('i');
+        let isPlaying = false;
+        let currentSong = null;
+        let uploadedSongs = [];
+        
+        // Sample music library
+        const musicLibrary = [
+            {
+                title: "Bohemian Rhapsody",
+                artist: "Queen",
+                cover: "https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            },
+            {
+                title: "Shape of You",
+                artist: "Ed Sheeran",
+                cover: "https://i.scdn.co/image/ab67616d00001e02d5f9985d59d3a5e0c8b28510",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            },
+            {
+                title: "Flowers",
+                artist: "Miley Cyrus",
+                cover: "https://i.scdn.co/image/ab67616d00001e02b1c4b76e23414c9f20242268",
+                audio: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            }
+        ];
+        
+        // Initialize player with first song
+        function initPlayer() {
+            if (musicLibrary.length > 0) {
+                playSong(musicLibrary[0]);
+            }
+        }
+        
+        // Play a song
+        function playSong(song) {
+            currentSong = song;
+            audioPlayer.src = song.audio;
+            audioPlayer.play();
+            isPlaying = true;
+            playIcon.classList.remove('fa-play');
+            playIcon.classList.add('fa-pause');
+            
+            // Update player UI
+            document.querySelector('.song-name').textContent = song.title;
+            document.querySelector('.song-artist').textContent = song.artist;
+            document.querySelector('.song-cover').src = song.cover;
+        }
+        
+        // Toggle play/pause
+        function togglePlayPause() {
+            if (currentSong) {
+                if (isPlaying) {
+                    audioPlayer.pause();
+                    playIcon.classList.remove('fa-pause');
+                    playIcon.classList.add('fa-play');
+                } else {
+                    audioPlayer.play();
+                    playIcon.classList.remove('fa-play');
+                    playIcon.classList.add('fa-pause');
+                }
+                isPlaying = !isPlaying;
+            } else if (musicLibrary.length > 0) {
+                playSong(musicLibrary[0]);
+            }
+        }
+        
+        // Play next song
+        function playNextSong() {
+            if (currentSong) {
+                const currentIndex = musicLibrary.findIndex(song => song.title === currentSong.title);
+                const nextIndex = (currentIndex + 1) % musicLibrary.length;
+                playSong(musicLibrary[nextIndex]);
+            } else if (musicLibrary.length > 0) {
+                playSong(musicLibrary[0]);
+            }
+        }
+        
+        // Handle audio events
+        audioPlayer.addEventListener('ended', playNextSong);
+        
+        // Player controls
+        playBtn.addEventListener('click', togglePlayPause);
+        document.querySelector('.player-controls .fa-step-forward').addEventListener('click', playNextSong);
+        
+        // Click on music cards
+        const musicCards = document.querySelectorAll('.music-card');
+        musicCards.forEach((card, index) => {
+            card.addEventListener('click', function() {
+                const songIndex = index % musicLibrary.length;
+                playSong(musicLibrary[songIndex]);
+            });
+        });
+        
+        // Play button on music cards
+        const cardPlayButtons = document.querySelectorAll('.play-button');
+        cardPlayButtons.forEach((button, index) => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const songIndex = index % musicLibrary.length;
+                playSong(musicLibrary[songIndex]);
+            });
+        });
+        
+        // File upload functionality
+        const fileInput = document.getElementById('fileInput');
+        const uploadedSongsList = document.getElementById('uploadedSongsList');
+        
+        fileInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // Check file type
+                    if (!file.type.match('audio.*')) {
+                        alert('Hanya file audio yang diperbolehkan');
+                        continue;
+                    }
+                    
+                    // Check file size (max 10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('Ukuran file terlalu besar (maksimal 10MB)');
+                        continue;
+                    }
+                    
+                    // Create object URL for the file
+                    const fileURL = URL.createObjectURL(file);
+                    
+                    // Create song object
+                    const newSong = {
+                        title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+                        artist: "Uploaded by You",
+                        cover: "https://i.scdn.co/image/ab67616d00001e02a04c78c9f617e4e5e800a9d6", // Default cover
+                        audio: fileURL
+                    };
+                    
+                    // Add to uploaded songs
+                    uploadedSongs.push(newSong);
+                    musicLibrary.push(newSong);
+                    
+                    // Add to UI
+                    const songElement = document.createElement('div');
+                    songElement.className = 'uploaded-song';
+                    songElement.innerHTML = `
+                        <img src="${newSong.cover}" alt="Cover" width="40" height="40" style="border-radius: 4px; margin-right: 10px;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${newSong.title}</div>
+                            <div style="font-size: 12px; color: var(--light-gray);">${newSong.artist}</div>
+                        </div>
+                        <button class="play-btn-sm" data-index="${musicLibrary.length - 1}" style="background: none; border: none; color: var(--light); font-size: 16px;">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    `;
+                    uploadedSongsList.appendChild(songElement);
+                    
+                    // Add event listener to play button
+                    songElement.querySelector('.play-btn-sm').addEventListener('click', function() {
+                        const songIndex = parseInt(this.getAttribute('data-index'));
+                        playSong(musicLibrary[songIndex]);
+                    });
+                }
+            }
+        });
+        
+        // Modal functionality
+        const loginModal = document.getElementById('loginModal');
+        const loginButtons = document.querySelectorAll('.btn-outline, .user-avatar');
+        const closeModal = document.querySelector('.close-modal');
+        
+        loginButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                loginModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        
+        closeModal.addEventListener('click', () => {
+            loginModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === loginModal) {
+                loginModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+        
+        // Menu toggle for sidebar on mobile
+        const menuToggle = document.querySelector('.menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.overlay');
+        
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        });
+        
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        });
+        
+        // Initialize player
+        initPlayer();
+    </script>
+</body>
+</html>
